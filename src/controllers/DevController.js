@@ -1,8 +1,7 @@
 const axios = require("axios");
 const Dev = require("../models/Dev");
 const parseStringAsArray = require("../utils/parseStringAsArray");
-
-// index, show, store, update, destroy
+const { findConnections, sendMessage } = require("../webscoket");
 
 module.exports = {
   async store(req, res) {
@@ -21,12 +20,9 @@ module.exports = {
       };
 
       const techsArray = parseStringAsArray(techs);
-
       const { name = login, avatar_url, bio } = response.data;
 
-      console.log({ name, avatar_url, bio });
-
-      const dev = await Dev.create({
+      dev = await Dev.create({
         github_username,
         name,
         avatar_url,
@@ -34,6 +30,13 @@ module.exports = {
         techs: techsArray,
         location
       });
+
+      const sendSocketMessageTo = findConnections(
+        { latitude, longitude },
+        techsArray
+      );
+
+      sendMessage(sendSocketMessageTo, "new-dev", dev);
     }
 
     return res.json({ dev });
